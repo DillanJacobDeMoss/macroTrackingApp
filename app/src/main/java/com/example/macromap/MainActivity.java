@@ -1,5 +1,7 @@
 package com.example.macromap;
 
+import static java.lang.Math.round;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -16,6 +18,9 @@ import android.widget.TextView;
 
 import com.google.android.material.navigation.NavigationView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     //Macro Values & Goals
@@ -27,6 +32,9 @@ public class MainActivity extends AppCompatActivity {
     private Number carbsGoal;
     private int proteinCurrent;
     private Number proteinGoal;
+
+    //Food List
+    private List<FoodItem> FoodList;
 
     //Macro Title Text Views
     private TextView textView_title_calories;
@@ -115,15 +123,32 @@ public class MainActivity extends AppCompatActivity {
         bar_fat = findViewById(R.id.progressBar_fat);
         bar_protein = findViewById(R.id.progressBar_protein);
 
-        //ASSIGN MACRO VALUES FOR TESTING                           <---- TEST
-        caloriesCurrent = 100;
+        //Initialize Macro Counts to zero
+        caloriesCurrent = 0;
+        fatCurrent = 0;
+        carbsCurrent = 0;
+        proteinCurrent = 0;
+
+        //Initialize FoodList
+        FoodList = new ArrayList<>();
+
+        // TESTING                                                   <---- TEST
         caloriesGoal = 200;
-        fatCurrent = 300;
         fatGoal = 200;
-        carbsCurrent = 1800;
         carbsGoal = 3000;
-        proteinCurrent = 150;
         proteinGoal = 150;
+
+        //test items
+        FoodItem item1 = new FoodItem("item1", 20, 100, 200, 200, 1);
+        FoodItem item2 = new FoodItem("item2", 0, 0, 0, 0, 2);
+        FoodItem item3 = new FoodItem("item3", 20, 20, 20, 20, 0);
+        FoodItem item4 = new FoodItem("item4", 40, 50, 50, 100, 2);
+        FoodList.add(item1);
+        FoodList.add(item2);
+        FoodList.add(item3);
+        FoodList.add(item4);
+        calculateMacros(); //THIS IS ALSO PART OF A TEST
+
         //                                                          <---- END TEST
 
 
@@ -155,13 +180,44 @@ public class MainActivity extends AppCompatActivity {
         bar_protein.setMax(proteinGoal.intValue());
         bar_protein.setProgress(proteinCurrent);
 
-        //TEST STUFF
+        //Toggles the progress bar and font size of Macro counts when goal is present/missing
         toggleMacroDisplay(caloriesGoal.intValue() != 0, bar_calories, textView_title_calories, textView_calories, editText_calGoal);
         toggleMacroDisplay(carbsGoal.intValue() != 0, bar_carbs, textView_title_carbs, textView_carbs, editText_carbGoal);
         toggleMacroDisplay(fatGoal.intValue() != 0, bar_fat, textView_title_fat, textView_fat, editText_fatGoal);
         toggleMacroDisplay(proteinGoal.intValue() != 0, bar_protein, textView_title_protein, textView_protein, editText_proGoal);
     }
 
+    //Calculate the new totals for Macros
+    private void calculateMacros(){
+
+        //Zero Out Macros
+        caloriesCurrent = 0;
+        fatCurrent = 0;
+        proteinCurrent = 0;
+        carbsCurrent = 0;
+
+        //Un-rounded float totals of the Macros in the food list
+        float calAdj = 0;
+        float fatAdj = 0;
+        float carbAdj = 0;
+        float proAdj = 0;
+
+        //Iterate through foodlist and total the macros
+        for (FoodItem item : FoodList) {
+            calAdj += item.getCaloriesAdj();
+            fatAdj += item.getFatAdj();
+            carbAdj += item.getCarbsAdj();
+            proAdj += item.getProteinAdj();
+        }
+
+        //Round total serving-adjusted macros and assign them
+        caloriesCurrent = round(calAdj);
+        fatCurrent = round(fatAdj);
+        proteinCurrent = round(proAdj);
+        carbsCurrent = round(carbAdj);
+    }
+
+    //listeners for the goal edit texts
     private void goalListeners(){
         editText_calGoal.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
@@ -236,6 +292,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //Checks if an Edit Text element is empty (empty string)
     private boolean textEmpty(EditText text){
         String query = String.valueOf(text.getText());
         if(query.equals("")){return true;}
@@ -256,6 +313,41 @@ public class MainActivity extends AppCompatActivity {
             macroCount.setTextSize(32);
             goal.setText("Add Goal");
         }
+    }
+
+    //Food Item
+    public class FoodItem {
+
+        //Macros
+        private int calories;
+        private int protein;
+        private int fat;
+        private int carbs;
+
+        private String name;
+        private float servings;
+
+        //Constructor
+        public FoodItem(String name, int cal, int fat, int carb, int pro, float servings){
+            this.name = name;
+            this.calories = cal;
+            this.fat = fat;
+            this.carbs = carb;
+            this.protein = pro;
+            this.servings = servings;
+        }
+
+        //Macro Getters
+        public int getCalories(){return calories;}
+        public int getProtein(){return protein;}
+        public int getFat(){return fat;}
+        public int getCarbs(){return carbs;}
+
+        //Macro Getters Adjusted for Serving Size
+        public float getCaloriesAdj(){return (float)calories * servings;}
+        public float getProteinAdj(){return (float)protein * servings;}
+        public float getFatAdj(){return (float)fat * servings;}
+        public float getCarbsAdj(){return (float)carbs * servings;}
     }
 
 
